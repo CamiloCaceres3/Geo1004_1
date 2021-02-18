@@ -12,12 +12,50 @@
 
 float signed_volume(const Point &a, const Point &b, const Point &c, const Point &d) {
   // to do
-  return 0;
+  Point ad = a-d;
+  Point bd = b-d;
+  Point cd = c-d;
+  Point bdcd = bd.cross(cd);
+  float dotabcd = ad.dot(bdcd); 
+  float vd  = 1.0/6.0 * dotabcd;
+  return vd;
 }
 
 bool intersects(const Point &orig, const Point &dest, const Point &v0, const Point &v1, const Point &v2) {
-  // to do
-  return 0;
+  // point v0
+  float v01 = signed_volume(orig,dest,v0,v1);
+  float v02 = signed_volume(orig,dest,v0,v2);
+  bool  sv0 = false;
+  if ( v01 * v02 <= 0)
+  {
+    sv0 = true;
+  }
+  // point v1
+  float v10 = signed_volume(orig,dest,v1,v0);
+  float v12 = signed_volume(orig,dest,v1,v2);
+  bool  sv1 = false;
+  if ( v10 * v12 <= 0)
+  {
+    sv1 = true;
+  }
+  // point v2 
+  float v20 = signed_volume(orig,dest,v2,v0);
+  float v21 = signed_volume(orig,dest,v2,v1);
+  bool  sv2 = false;
+  if ( v20 * v21 <= 0)
+  {
+    sv2 = true;
+  }
+
+  if( sv0 && sv1 && sv2)
+  {
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+  ;
 }
 
 int read_object(std::string  input,   std::vector<Point> &vertices, std::vector<std::vector<unsigned int>> &faces)
@@ -74,12 +112,12 @@ int read_object(std::string  input,   std::vector<Point> &vertices, std::vector<
         else if(i==1)
         {
           j = std::stoi(cursor);
-          fa.push_back(i);
+          fa.push_back(j);
         }
         else if( i ==2)
         {
           k = std:: stoi(cursor);
-          fa.push_back(i);
+          fa.push_back(k);
         }
       }
       faces.push_back(fa);
@@ -126,6 +164,18 @@ void boundary_box(std::vector<Point> &boundary,std::vector<Point> &vertices )
   boundary.push_back(max_pt);
 }
 
+bool boundary_interior(Point &bPoint, std::vector<Point> &bTriangle)
+{
+  bool resp = false;
+  if(bTriangle[0].x <= bPoint.x && bTriangle[1].x >=  bPoint.x
+  && bTriangle[0].y <= bPoint.y && bTriangle[1].y >=  bPoint.y 
+  && bTriangle[0].z <= bPoint.z && bTriangle[1].z >=  bPoint.z)
+  {
+    resp = true; 
+  }
+  return resp;
+}
+
 int main(int argc, const char * argv[]) {
   const char *file_in = "bag_bk.obj";
   const char *file_out = "vox.obj";
@@ -156,8 +206,60 @@ int main(int argc, const char * argv[]) {
 
   
   // Voxelise
+  int l = 0;
   for (auto const &triangle: faces) {
+
     // to do
+    std::vector<Point> ver_triangles;
+    std::vector<Point> bound_triangles;
+    //compute the bounding box of the triangle
+    for (auto  const &vert: triangle)
+    {
+      Point p = vertices[vert];
+      ver_triangles.push_back(p);
+    }
+    boundary_box(bound_triangles, ver_triangles);
+    // get the voxels in the bounding box of the triangle
+    for(int i =0 ; i < rows.x; i ++)
+    {
+      for(  int  j  = 0 ; j < rows.y; j ++)
+      {
+        for ( int k = 0 ; k < rows.z; k ++)
+        {
+          Point minC = Point(i+boundary[0].x, j+boundary[0].y, k+boundary[0].z);
+          Point maxC = Point(minC.x+voxel_size, minC.y+voxel_size, minC.z+voxel_size);
+          if( boundary_interior(minC, bound_triangles))
+          {
+            Point f1 = Point(minC.x+0.5, minC.y+0.5, minC.z);
+            Point f2 = Point(minC.x+0.5, minC.y+0.5, minC.z+1);
+            Point f3 = Point(minC.x+0.5, minC.y, minC.z+0.5);
+            Point f4 = Point(minC.x+0.5, minC.y+1, minC.z+0.5);
+            Point f5 = Point(minC.x, minC.y+0.5, minC.z+0.5);
+            Point f6 = Point(minC.x+1, minC.y+0.5, minC.z+0.5);
+            float t11 = signed_volume(ver_triangles[0], ver_triangles[1], ver_triangles[2], f2);
+            float t12 = signed_volume(ver_triangles[0], ver_triangles[1], ver_triangles[2], f1);
+            float t1 = t11 * t12;
+            float t21 = signed_volume(ver_triangles[0], ver_triangles[1], ver_triangles[2], f6);
+            float t22 = signed_volume(ver_triangles[0], ver_triangles[1], ver_triangles[2], f5);
+            float t2 = t21 * t22;
+            float t31 = signed_volume(ver_triangles[0], ver_triangles[1], ver_triangles[2], f4);
+            float t32 = signed_volume(ver_triangles[0], ver_triangles[1], ver_triangles[2], f3);
+            float t3 = t31 * t32;
+            bool t4 = intersects(f2,f1,ver_triangles[0], ver_triangles[1], ver_triangles[2]);
+            bool t5 = intersects(f6,f5,ver_triangles[0], ver_triangles[1], ver_triangles[2]);
+            bool t6 = intersects(f4,f3,ver_triangles[0], ver_triangles[1], ver_triangles[2]);
+            bool rr = false;
+            if( (t1 <=0 || t2 <=0 || t3<= 0) && (t4 || t5 || t6) )
+            {
+              voxels(i,j,k) = 1;
+              rr = true;
+            }
+            std:: cout << l << std::endl;
+          }
+        }
+      }
+    }
+  l ++; 
   }
   
   // Fill model
