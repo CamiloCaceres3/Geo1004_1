@@ -26,7 +26,7 @@ bool intersects(const Point &orig, const Point &dest, const Point &v0, const Poi
   float v01 = signed_volume(orig,dest,v0,v1);
   float v02 = signed_volume(orig,dest,v0,v2);
   bool  sv0 = false;
-  if ( v01 * v02 <= 0)
+  if ( v01 * v02 < 0)
   {
     sv0 = true;
   }
@@ -34,7 +34,7 @@ bool intersects(const Point &orig, const Point &dest, const Point &v0, const Poi
   float v10 = signed_volume(orig,dest,v1,v0);
   float v12 = signed_volume(orig,dest,v1,v2);
   bool  sv1 = false;
-  if ( v10 * v12 <= 0)
+  if ( v10 * v12 < 0)
   {
     sv1 = true;
   }
@@ -42,7 +42,7 @@ bool intersects(const Point &orig, const Point &dest, const Point &v0, const Poi
   float v20 = signed_volume(orig,dest,v2,v0);
   float v21 = signed_volume(orig,dest,v2,v1);
   bool  sv2 = false;
-  if ( v20 * v21 <= 0)
+  if ( v20 * v21 < 0)
   {
     sv2 = true;
   }
@@ -226,7 +226,7 @@ int main(int argc, const char * argv[]) {
       {
         for ( int k = 0 ; k < rows.z; k ++)
         {
-          Point minC = Point(i+boundary[0].x, j+boundary[0].y, k+boundary[0].z);
+          Point minC = Point(i*voxel_size+boundary[0].x, j*voxel_size+boundary[0].y, k*voxel_size+boundary[0].z);
           Point maxC = Point(minC.x+voxel_size, minC.y+voxel_size, minC.z+voxel_size);
           if( boundary_interior(minC, bound_triangles))
           {
@@ -249,19 +249,20 @@ int main(int argc, const char * argv[]) {
             bool t5 = intersects(f6,f5,ver_triangles[0], ver_triangles[1], ver_triangles[2]);
             bool t6 = intersects(f4,f3,ver_triangles[0], ver_triangles[1], ver_triangles[2]);
             bool rr = false;
-            if( (t1 <=0 || t2 <=0 || t3<= 0) && (t4 || t5 || t6) )
+            if( (t1 <0 || t2 <0 || t3< 0) && (t4 || t5 || t6) )
             {
               voxels(i,j,k) = 1;
+              l ++; 
               rr = true;
             }
-            std:: cout << l << std::endl;
+
           }
         }
       }
     }
-  l ++; 
+
   }
-  
+  std::cout << l << std::endl;  
   // Fill model
   // to do
   
@@ -271,8 +272,50 @@ int main(int argc, const char * argv[]) {
   output = "../" + output;
   myfile.open(output);
   std::cout << "Writing file: " << file_out << std::endl;
-  myfile << "output\n";
+  for(int k =0 ; k < rows.z; k ++)
+  {
+    for(  int  j  = 0 ; j < rows.y; j ++)
+    {
+      for ( int i = 0 ; i < rows.x; i ++)
+      {
+        Point pt  = Point(i+boundary[0].x, j+boundary[0].y, k+boundary[0].z);
+          myfile << "v "<< pt.x << " " << pt.y << " " << pt.z << "\n";
+      }
+    }
+  }
+  int t = 0;
+  for(int k =0 ; k < rows.z-1; k ++)
+  {
+    for(  int  j  = 0 ; j < rows.y-1; j ++)
+    {
+      for ( int i = 0 ; i < rows.x-1; i ++)
+      {
+        if(voxels(i,j,k) == 1)
+        {
+          int v1 = i + j*rows.x + k*rows.x*rows.y+1;
+          int v2 = i + (j+1)*rows.x + k*rows.x*rows.y+1;
+          int v3 = i + 1 + (j+1)*rows.x + k*rows.x*rows.y+1;
+          int v4 = i + 1 + j*rows.x + k*rows.x*rows.y+1;
+          int v5 = i + j*rows.x + (k+1)*rows.x*rows.y+1;
+          int v6 = i + 1 + j*rows.x + (k+1)*rows.x*rows.y+1;
+          int v7 = i + 1 + (j+1)*rows.x + (k+1)*rows.x*rows.y+1;
+          int v8 = i + (j+1)*rows.x + (k+1)*rows.x*rows.y+1;
+          //std:: cout << v1 << "," << v2 << "," << v3 << "," << v4 << "," << v5 << "," << v6 << "," << v7 << "," << v8 << pt <<std::endl;
+          myfile << "f " <<  v1 << " " << v4 << " " << v3 << " " << v2   << "\n";
+          myfile << "f " <<  v5 << " " << v6 << " " << v7 << " " << v8   << "\n";
+          myfile << "f " <<  v1 << " " << v4 << " " << v6 << " " << v5   << "\n";
+          myfile << "f " <<  v2 << " " << v3 << " " << v7 << " " << v8   << "\n";
+          myfile << "f " <<  v1 << " " << v2 << " " << v8 << " " << v5   << "\n";
+          myfile << "f " <<  v4 << " " << v3 << " " << v7 << " " << v6   << "\n";
+          t ++;
+        }
+      }
+    }
+  }
+  
   myfile.close();
+  std::cout << t << std::endl;
+  std::cout << "FINISHED Writing file: " << file_out << std::endl;
   // to do
   return 0;
 }
