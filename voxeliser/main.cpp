@@ -231,12 +231,12 @@ int main(int argc, const char * argv[]) {
           Point maxC = Point(minC.x+voxel_size, minC.y+voxel_size, minC.z+voxel_size);
           if( boundary_interior(minC, bound_triangles))
           {
-            Point f1 = Point(minC.x+0.5, minC.y+0.5, minC.z);
-            Point f2 = Point(minC.x+0.5, minC.y+0.5, minC.z+1);
-            Point f3 = Point(minC.x+0.5, minC.y, minC.z+0.5);
-            Point f4 = Point(minC.x+0.5, minC.y+1, minC.z+0.5);
-            Point f5 = Point(minC.x, minC.y+0.5, minC.z+0.5);
-            Point f6 = Point(minC.x+1, minC.y+0.5, minC.z+0.5);
+            Point f1 = Point(minC.x+0.5*voxel_size, minC.y+0.5*voxel_size, minC.z);
+            Point f2 = Point(minC.x+0.5*voxel_size, minC.y+0.5*voxel_size, minC.z+1*voxel_size);
+            Point f3 = Point(minC.x+0.5*voxel_size, minC.y, minC.z+0.5*voxel_size);
+            Point f4 = Point(minC.x+0.5*voxel_size, minC.y+1*voxel_size, minC.z+0.5*voxel_size);
+            Point f5 = Point(minC.x, minC.y+0.5*voxel_size, minC.z+0.5*voxel_size);
+            Point f6 = Point(minC.x+1*voxel_size, minC.y+0.5*voxel_size, minC.z+0.5*voxel_size);
             float t11 = signed_volume(ver_triangles[0], ver_triangles[1], ver_triangles[2], f2);
             float t12 = signed_volume(ver_triangles[0], ver_triangles[1], ver_triangles[2], f1);
             float t1 = t11 * t12;
@@ -288,7 +288,7 @@ int main(int argc, const char * argv[]) {
     {
       for ( int i = 0 ; i < rows.x; i ++)
       {
-        Point pt  = Point(i+boundary[0].x, j+boundary[0].y, k+boundary[0].z);
+        Point pt  = Point(i*voxel_size+boundary[0].x, j*voxel_size+boundary[0].y, k*voxel_size+boundary[0].z);
           myfile << "v "<< pt.x << " " << pt.y << " " << pt.z << "\n";
         
       }
