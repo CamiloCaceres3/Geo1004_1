@@ -164,17 +164,70 @@ void boundary_box(std::vector<Point> &boundary,std::vector<Point> &vertices )
   boundary.push_back(max_pt);
 }
 
-bool boundary_interior(Point &bPoint, std::vector<Point> &bTriangle)
+
+std::vector<int> trianlgle_boundary_index(std::vector<Point> &bTriangle,   std::vector<Point> &boundary, float &vox_size)
 {
-  bool resp = false;
-  if(bTriangle[0].x -1 <= bPoint.x && bTriangle[1].x+1 >=  bPoint.x
-  && bTriangle[0].y -1<= bPoint.y && bTriangle[1].y+1  >=  bPoint.y 
-  && bTriangle[0].z -1 <= bPoint.z && bTriangle[1].z +1>=  bPoint.z)
-  {
-    resp = true; 
-  }
-  return resp;
+  std::vector<int> i_triang ;
+  int t_xmin = (int) floor((bTriangle[0].x  - boundary[0].x)/ vox_size) ;
+  int t_xmax = (int) floor((bTriangle[1].x  - boundary[0].x)/ vox_size) ;
+
+  int t_ymin = (int) floor((bTriangle[0].y  -boundary[0].y)/ vox_size) ;
+  int t_ymax = (int) floor((bTriangle[1].y  -boundary[0].y)/ vox_size) ;
+
+  int t_zmin = (int) floor((bTriangle[0].z  -boundary[0].z)/ vox_size) ;
+  int t_zmax = (int) floor((bTriangle[1].z  -boundary[0].z)/ vox_size) ;
+
+  i_triang.push_back(t_xmin);
+  i_triang.push_back(t_xmax);
+  i_triang.push_back(t_ymin);
+  i_triang.push_back(t_ymax);
+  i_triang.push_back(t_zmin);
+  i_triang.push_back(t_zmax);  
+  return i_triang;
+
 }
+
+bool inside_index(int a, int b, int c, int i, int j , int k)
+{
+  bool r = true;
+  if(i<0 || j< 0 || k < 0 || i>= (int) a|| j >= (int) b || k >= (int)c)
+  {
+    r = false;
+  }
+  return r;
+}
+
+int fill(  VoxelGrid  &v,   VoxelGrid &vt, int i ,int j , int k, int a, int b, int c)
+{
+  //std:: cout << i <<"," << j << ","<< k << std::endl;
+  if( inside_index(a,b,c,i,j,k) == false)
+  {
+    //std:: cout << "index" << std::endl;
+    return 0;
+  }
+  else{
+    if(vt(i,j,k) ==1 || v(i,j,k)==1 )
+    {
+      //std:: cout << "l" << std::endl;
+      return 0;
+    }
+    else
+    {
+    v(i,j,k)=1;
+    //std:: cout << "s" << std::endl;
+    
+    return fill(v,vt,i+1,j,k, a,b,c)+
+    fill(v,vt,i-1,j,k, a,b,c)+
+    fill(v,vt,i,j+1,k, a,b,c)+
+    fill(v,vt,i,j-1,k, a,b,c)+
+    fill(v,vt,i,j,k+1, a,b,c)+
+     fill(v,vt,i,j,k-1, a,b,c);
+    }
+  }
+
+}
+
+
 
 int main(int argc, const char * argv[]) {
   const char *file_in = "bag_bk.obj";
@@ -204,7 +257,7 @@ int main(int argc, const char * argv[]) {
   // to do
   VoxelGrid voxels(rows.x, rows.y, rows.z);
 
-  
+  std::cout << "Boundary Index: " << rows << std::endl;
   // Voxelise
   int l = 0;
   int f =0;
@@ -220,17 +273,17 @@ int main(int argc, const char * argv[]) {
       ver_triangles.push_back(p);
     }
     boundary_box(bound_triangles, ver_triangles);
+
+    std::vector<int> index_triangles = trianlgle_boundary_index(bound_triangles, boundary, voxel_size);
     // get the voxels in the bounding box of the triangle
-    for(int k =0 ; k < rows.z; k ++)
+    for(int k = index_triangles[4] ; k < index_triangles[5] + 1 ; k ++)
     {
-      for(  int  j  = 0 ; j < rows.y; j ++)
+      for(  int  j  = index_triangles[2] ; j < index_triangles[3] + 1; j ++)
       {
-        for ( int i = 0 ; i < rows.x; i ++)
+        for ( int i = index_triangles[0] ; i < index_triangles[1]+1; i ++)
         {
           Point minC = Point(i*voxel_size + (boundary[0].x), j*voxel_size + (boundary[0].y), k*voxel_size+ (boundary[0].z));
           Point maxC = Point(minC.x+voxel_size, minC.y+voxel_size, minC.z+voxel_size);
-          if( boundary_interior(minC, bound_triangles))
-          {
             Point f1 = Point(minC.x+0.5*voxel_size, minC.y+0.5*voxel_size, minC.z);
             Point f2 = Point(minC.x+0.5*voxel_size, minC.y+0.5*voxel_size, minC.z+1*voxel_size);
             Point f3 = Point(minC.x+0.5*voxel_size, minC.y, minC.z+0.5*voxel_size);
@@ -253,26 +306,66 @@ int main(int argc, const char * argv[]) {
             if( (t1 <=0 && t4 ) || (t2 <=0 && t5) || (t3<=0 && t6) )
             {
               voxels(i,j,k) = 1;
-              for(int q = 0; q <k ; q ++)
-              {
-                voxels(i,j,q) = 1;
-                if (q !=0 )
-                {
-                  f++;
-                }
-              }
               l ++; 
               rr = true;
             }
-
-          }
+          
         }
       }
     }
 
   }
-  std::cout <<  "Number of boxes on the boundary: " <<  l << std::endl; 
-  std::cout <<  "Number of boxes inside : " << f << std::endl;   
+  std::cout << "fill model" << std::endl;
+  //fill the model
+  VoxelGrid voxel_fil(rows.x, rows.y, rows.z);
+  int p = rows.x-1;
+  for( int i = 0 ; i < p; i ++)
+  {
+    //std::cout <<  (i+1)*rows.x/p << std::endl;
+    fill(voxel_fil, voxels, (int) i*rows.x/p,0,0, (int) (i+1)*rows.x/p, rows.y , (int) rows.z);
+  }
+
+  for(int k =0 ; k < rows.z; k ++)
+  {
+    for(  int  j  = 0 ; j < rows.y; j ++)
+    {
+      for ( int i = 0 ; i < rows.x; i ++)
+      {
+        if(voxel_fil(i,j,k) == 0)
+        {
+          voxels(i,j,k)=1;
+        }
+      }
+    }
+  }
+  std::cout << "count voxels" << std::endl;
+  int bb = 0, ii = 0;
+  for(int k =0 ; k < rows.z; k ++)
+  {
+    for(  int  j  = 0 ; j < rows.y; j ++)
+    {
+      for ( int i = 0 ; i < rows.x; i ++)
+      {
+        if(voxels(i,j,k) == 1)
+        {
+          if( voxels(std::min((int)rows.x-1 ,i+1),j,k) == 1 && voxels(std::max(0,i-1),j,k) == 1
+            && voxels(i,std::min((int)rows.y-1,j+1),k) == 1 && voxels(i,std::max(0 ,j-1),k) == 1 
+            && voxels(i,j,std::min((int)rows.z-1, k +1)) == 1 && voxels(i,j, std::max(0, k-1)) == 1)
+            {
+              ii ++;
+            } 
+          else
+          {
+            bb++;
+          }
+        }
+        
+      }
+    }
+  }
+  std::cout <<  "Number of boxes on the boundary 2 : " <<  bb << std::endl; 
+  std::cout <<  "Number of boxes inside  2 : " << ii << std::endl;  
+
   // Fill model
   // to do
   
