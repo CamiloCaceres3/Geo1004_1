@@ -366,6 +366,7 @@ int main(int argc, const char * argv[]) {
   std::cout <<  "Number of boxes on the boundary 2 : " <<  bb << std::endl; 
   std::cout <<  "Number of boxes inside  2 : " << ii << std::endl;  
 
+  std::cout <<  "TOTAL VOLUME: " << ii + floor(bb/2.0) << std::endl;  
   // Fill model
   // to do
   
