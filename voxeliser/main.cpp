@@ -376,19 +376,9 @@ int main(int argc, const char * argv[]) {
   output = "../" + output;
   myfile.open(output);
   std::cout << "Writing file: " << file_out << std::endl;
-  for(int k =0 ; k < rows.z; k ++)
-  {
-    for(  int  j  = 0 ; j < rows.y; j ++)
-    {
-      for ( int i = 0 ; i < rows.x; i ++)
-      {
-        Point pt  = Point(i*voxel_size+boundary[0].x, j*voxel_size+boundary[0].y, k*voxel_size+boundary[0].z);
-          myfile << "v "<< pt.x << " " << pt.y << " " << pt.z << "\n";
-        
-      }
-    }
-  }
+
   int t = 0;
+  int counter = 1;
   for(int k =0 ; k < rows.z-1; k ++)
   {
     for(  int  j  = 0 ; j < rows.y-1; j ++)
@@ -397,22 +387,37 @@ int main(int argc, const char * argv[]) {
       {
         if(voxels(i,j,k) == 1)
         {
-          int v1 = i + j*rows.x + k*rows.x*rows.y +1;
-          int v2 = i + (j+1)*rows.x + k*rows.x*rows.y +1;
-          int v3 = i + 1 + (j+1)*rows.x + k*rows.x*rows.y +1;
-          int v4 = i + 1 + j*rows.x + k*rows.x*rows.y  +1;
-          int v5 = i + j*rows.x + (k+1)*rows.x*rows.y +1;
-          int v6 = i + 1 + j*rows.x + (k+1)*rows.x*rows.y +1;
-          int v7 = i + 1 + (j+1)*rows.x + (k+1)*rows.x*rows.y +1;
-          int v8 = i + (j+1)*rows.x + (k+1)*rows.x*rows.y +1;
+         
           //std:: cout << v1 << "," << v2 << "," << v3 << "," << v4 << "," << v5 << "," << v6 << "," << v7 << "," << v8 << pt <<std::endl;
-          myfile << "f " <<  v1 << " " << v4 << " " << v3 << " " << v2   << "\n";
-          myfile << "f " <<  v5 << " " << v6 << " " << v7 << " " << v8   << "\n";
-          myfile << "f " <<  v1 << " " << v4 << " " << v6 << " " << v5   << "\n";
-          myfile << "f " <<  v2 << " " << v3 << " " << v7 << " " << v8   << "\n";
-          myfile << "f " <<  v1 << " " << v2 << " " << v8 << " " << v5   << "\n";
-          myfile << "f " <<  v4 << " " << v3 << " " << v7 << " " << v6   << "\n";
+          Point pt = Point(i * voxel_size + boundary[0].x, j * voxel_size + boundary[0].y, k * voxel_size + boundary[0].z);
+          Point pt2 = Point(pt.x, pt.y + voxel_size, pt.z);
+          Point pt3 = Point(pt.x+ voxel_size, pt.y + voxel_size, pt.z);
+          Point pt4 = Point(pt.x + voxel_size, pt.y, pt.z);
+          Point pt5 = Point(pt.x , pt.y, pt.z+ voxel_size);
+          Point pt6 = Point(pt.x + voxel_size, pt.y , pt.z+ voxel_size);
+          Point pt7 = Point(pt.x + voxel_size, pt.y + voxel_size, pt.z + voxel_size);
+          Point pt8 = Point(pt.x , pt.y + voxel_size, pt.z+ voxel_size);
+          
+          myfile << "v " << pt.x << " " << pt.y << " " << pt.z << "\n";      
+          myfile << "v " << pt2.x << " " << pt2.y << " " << pt2.z << "\n";
+          myfile << "v " << pt3.x << " " << pt3.y << " " << pt3.z << "\n";
+          myfile << "v " << pt4.x << " " << pt4.y << " " << pt4.z << "\n";
+          myfile << "v " << pt5.x << " " << pt5.y << " " << pt5.z << "\n";
+          myfile << "v " << pt6.x << " " << pt6.y << " " << pt6.z << "\n";
+          myfile << "v " << pt7.x << " " << pt7.y << " " << pt7.z << "\n";
+          myfile << "v " << pt8.x << " " << pt8.y << " " << pt8.z << "\n";
+
+
+
+          myfile << "f " <<  counter << " " << counter+3 << " " << counter+2 << " " << counter+1   << "\n";
+          myfile << "f " <<  counter+4 << " " << counter+5 << " " << counter + 6 << " " << counter+7   << "\n";
+          myfile << "f " <<  counter << " " << counter+3 << " " << counter+5 << " " << counter+4   << "\n";
+          myfile << "f " <<  counter+1 << " " << counter+2 << " " << counter+6 << " " << counter+7   << "\n";
+          myfile << "f " <<  counter << " " << counter+1 << " " << counter+7 << " " << counter+4   << "\n";
+          myfile << "f " <<  counter+3 << " " << counter+2 << " " << counter+6 << " " << counter+5   << "\n";
+          counter = counter + 8;
           t ++;
+
         }
       }
     }
