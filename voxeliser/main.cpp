@@ -169,13 +169,13 @@ std::vector<int> trianlgle_boundary_index(std::vector<Point> &bTriangle,   std::
 {
   std::vector<int> i_triang ;
   int t_xmin = (int) floor((bTriangle[0].x  - boundary[0].x)/ vox_size) ;
-  int t_xmax = (int) floor((bTriangle[1].x  - boundary[0].x)/ vox_size) ;
+  int t_xmax = (int) ceil((bTriangle[1].x  - boundary[0].x)/ vox_size);
 
   int t_ymin = (int) floor((bTriangle[0].y  -boundary[0].y)/ vox_size) ;
-  int t_ymax = (int) floor((bTriangle[1].y  -boundary[0].y)/ vox_size) ;
+  int t_ymax = (int) ceil((bTriangle[1].y  -boundary[0].y)/ vox_size);
 
   int t_zmin = (int) floor((bTriangle[0].z  -boundary[0].z)/ vox_size) ;
-  int t_zmax = (int) floor((bTriangle[1].z  -boundary[0].z)/ vox_size) ;
+  int t_zmax = (int) ceil((bTriangle[1].z  -boundary[0].z)/ vox_size);
 
   i_triang.push_back(t_xmin);
   i_triang.push_back(t_xmax);
@@ -339,7 +339,7 @@ int main(int argc, const char * argv[]) {
     }
   }
   std::cout << "count voxels" << std::endl;
-  int bb = 0, ii = 0;
+  int bb = 0, ii = 0, h =0 ;
   for(int k =0 ; k < rows.z; k ++)
   {
     for(  int  j  = 0 ; j < rows.y; j ++)
@@ -348,6 +348,7 @@ int main(int argc, const char * argv[]) {
       {
         if(voxels(i,j,k) == 1)
         {
+          h++;
           if( voxels(std::min((int)rows.x-1 ,i+1),j,k) == 1 && voxels(std::max(0,i-1),j,k) == 1
             && voxels(i,std::min((int)rows.y-1,j+1),k) == 1 && voxels(i,std::max(0 ,j-1),k) == 1 
             && voxels(i,j,std::min((int)rows.z-1, k +1)) == 1 && voxels(i,j, std::max(0, k-1)) == 1)
@@ -363,12 +364,13 @@ int main(int argc, const char * argv[]) {
       }
     }
   }
-  std::cout <<  "Number of boxes on the boundary 2 : " <<  bb << std::endl; 
-  std::cout <<  "Number of boxes inside  2 : " << ii << std::endl;  
+  std::cout <<  "Number of voxels on the boundary 2 : " <<  bb << std::endl; 
+  std::cout <<  "Number of voxels inside  2 : " << ii << std::endl;  
+    std::cout <<  "Number of voxels : " << h  << std::endl;  
 
-  std::cout <<  "TOTAL VOLUME: " << ii + floor(bb/2.0) << std::endl;  
+  std::cout <<  "TOTAL VOLUME: " << ii + floor(bb/2.0) << " m3" << std::endl;  
   // Fill model
-  // to do
+  // to do0
   
   // Write voxels
   std::ofstream myfile;
@@ -379,11 +381,11 @@ int main(int argc, const char * argv[]) {
 
   int t = 0;
   int counter = 1;
-  for(int k =0 ; k < rows.z-1; k ++)
+  for(int k =0 ; k < rows.z; k ++)
   {
-    for(  int  j  = 0 ; j < rows.y-1; j ++)
+    for(  int  j  = 0 ; j < rows.y; j ++)
     {
-      for ( int i = 0 ; i < rows.x-1; i ++)
+      for ( int i = 0 ; i < rows.x; i ++)
       {
         if(voxels(i,j,k) == 1)
         {
@@ -423,7 +425,7 @@ int main(int argc, const char * argv[]) {
     }
   }
   myfile.close();
-  std::cout << t << std::endl;
+  std::cout << "Number of boxels written:  " <<t << std::endl;
   std::cout << "FINISHED Writing file: " << file_out << std::endl;
   // to do
   return 0;
