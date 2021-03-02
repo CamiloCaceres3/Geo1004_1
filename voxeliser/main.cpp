@@ -4,6 +4,7 @@
 #include <sstream>
 
 #include <math.h> 
+#include <unordered_map>
 
 #include "Point.h"
 #include "Rows.h"
@@ -22,6 +23,15 @@ float signed_volume(const Point &a, const Point &b, const Point &c, const Point 
 }
 
 bool intersects(const Point &orig, const Point &dest, const Point &v0, const Point &v1, const Point &v2) {
+  //first test
+  float vo = signed_volume(v0,v1,v2,orig);
+  float vd = signed_volume(v0,v1,v2,dest);
+  bool  sv = false;
+  if ( vo * vd <= 0)
+  {
+    sv = true;
+  }
+
   // point v0
   float v01 = signed_volume(orig,dest,v0,v1);
   float v02 = signed_volume(orig,dest,v0,v2);
@@ -47,7 +57,7 @@ bool intersects(const Point &orig, const Point &dest, const Point &v0, const Poi
     sv2 = true;
   }
 
-  if( sv0 && sv1 && sv2)
+  if( sv && sv0 && sv1 && sv2)
   {
     return true;
   }
@@ -290,20 +300,11 @@ int main(int argc, const char * argv[]) {
             Point f4 = Point(minC.x+0.5*voxel_size, minC.y+1*voxel_size, minC.z+0.5*voxel_size);
             Point f5 = Point(minC.x, minC.y+0.5*voxel_size, minC.z+0.5*voxel_size);
             Point f6 = Point(minC.x+1*voxel_size, minC.y+0.5*voxel_size, minC.z+0.5*voxel_size);
-            float t11 = signed_volume(ver_triangles[0], ver_triangles[1], ver_triangles[2], f2);
-            float t12 = signed_volume(ver_triangles[0], ver_triangles[1], ver_triangles[2], f1);
-            float t1 = t11 * t12;
-            float t21 = signed_volume(ver_triangles[0], ver_triangles[1], ver_triangles[2], f6);
-            float t22 = signed_volume(ver_triangles[0], ver_triangles[1], ver_triangles[2], f5);
-            float t2 = t21 * t22;
-            float t31 = signed_volume(ver_triangles[0], ver_triangles[1], ver_triangles[2], f4);
-            float t32 = signed_volume(ver_triangles[0], ver_triangles[1], ver_triangles[2], f3);
-            float t3 = t31 * t32;
-            bool t4 = intersects(f2,f1,ver_triangles[0], ver_triangles[1], ver_triangles[2]);
-            bool t5 = intersects(f6,f5,ver_triangles[0], ver_triangles[1], ver_triangles[2]);
-            bool t6 = intersects(f4,f3,ver_triangles[0], ver_triangles[1], ver_triangles[2]);
+            bool t1 = intersects(f2,f1,ver_triangles[0], ver_triangles[1], ver_triangles[2]);
+            bool t2 = intersects(f6,f5,ver_triangles[0], ver_triangles[1], ver_triangles[2]);
+            bool t3 = intersects(f4,f3,ver_triangles[0], ver_triangles[1], ver_triangles[2]);
             bool rr = false;
-            if( (t1 <=0 && t4 ) || (t2 <=0 && t5) || (t3<=0 && t6) )
+            if( (t1) || (t2) || (t3) )
             {
               voxels(i,j,k) = 1;
               l ++; 
@@ -368,7 +369,7 @@ int main(int argc, const char * argv[]) {
   std::cout <<  "Number of voxels inside  2 : " << ii << std::endl;  
     std::cout <<  "Number of voxels : " << h  << std::endl;  
 
-  std::cout <<  "TOTAL VOLUME: " << ii + floor(bb/2.0) << " m3" << std::endl;  
+  std::cout <<  "TOTAL VOLUME: " << (ii + floor(bb/2.0))*(pow(voxel_size,3)) << " m3" << std::endl;  
   // Fill model
   // to do0
   
@@ -379,8 +380,10 @@ int main(int argc, const char * argv[]) {
   myfile.open(output);
   std::cout << "Writing file: " << file_out << std::endl;
 
-  int t = 0;
+  int t = 1;
   int counter = 1;
+  std::unordered_map<int,int> umap;
+
   for(int k =0 ; k < rows.z; k ++)
   {
     for(  int  j  = 0 ; j < rows.y; j ++)
@@ -392,40 +395,81 @@ int main(int argc, const char * argv[]) {
          
           //std:: cout << v1 << "," << v2 << "," << v3 << "," << v4 << "," << v5 << "," << v6 << "," << v7 << "," << v8 << pt <<std::endl;
           Point pt = Point(i * voxel_size + boundary[0].x, j * voxel_size + boundary[0].y, k * voxel_size + boundary[0].z);
+          if(umap.find(i + j*rows.x + k*rows.x*rows.y) == umap.end())
+          {
+          myfile << "v " << pt.x << " " << pt.y << " " << pt.z << "\n"; 
+          umap.insert({i + j*rows.x + k*rows.x*rows.y,t});
+          t++;
+          }
+          if(umap.find(i + (j+1)*rows.x + k*rows.x*rows.y) == umap.end())
+          {
           Point pt2 = Point(pt.x, pt.y + voxel_size, pt.z);
+          myfile << "v " << pt2.x << " " << pt2.y << " " << pt2.z << "\n"; 
+          umap.insert({i + (j+1)*rows.x + k*rows.x*rows.y,t});
+          t++;
+          }
+          if(umap.find((i+1) + (j+1)*rows.x + k*rows.x*rows.y) == umap.end())
+          {
           Point pt3 = Point(pt.x+ voxel_size, pt.y + voxel_size, pt.z);
+          myfile << "v " << pt3.x << " " << pt3.y << " " << pt3.z << "\n"; 
+          umap.insert({(i+1) + (j+1)*rows.x + k*rows.x*rows.y,t});
+          t++;
+          }
+          if(umap.find((i+1) + j*rows.x + k*rows.x*rows.y) == umap.end())
+          {
           Point pt4 = Point(pt.x + voxel_size, pt.y, pt.z);
+          myfile << "v " << pt4.x << " " << pt4.y << " " << pt4.z << "\n"; 
+          umap.insert({(i+1) + j*rows.x + k*rows.x*rows.y,t});
+          t++;
+          }
+          if(umap.find(i + j*rows.x + (k+1)*rows.x*rows.y) == umap.end())
+          {
           Point pt5 = Point(pt.x , pt.y, pt.z+ voxel_size);
+          myfile << "v " << pt5.x << " " << pt5.y << " " << pt5.z << "\n"; 
+          umap.insert({i + j*rows.x + (k+1)*rows.x*rows.y,t});
+          t++;
+          }
+          if(umap.find((i+1) + j*rows.x + (k+1)*rows.x*rows.y) == umap.end())
+          {
           Point pt6 = Point(pt.x + voxel_size, pt.y , pt.z+ voxel_size);
+          myfile << "v " << pt6.x << " " << pt6.y << " " << pt6.z << "\n"; 
+          umap.insert({(i+1) + j*rows.x + (k+1)*rows.x*rows.y,t});
+          t++;
+          }
+          if(umap.find((i+1) + (j+1)*rows.x + (k+1)*rows.x*rows.y) == umap.end())
+          {
           Point pt7 = Point(pt.x + voxel_size, pt.y + voxel_size, pt.z + voxel_size);
+          myfile << "v " << pt7.x << " " << pt7.y << " " << pt7.z << "\n"; 
+          umap.insert({(i+1) + (j+1)*rows.x + (k+1)*rows.x*rows.y,t});
+          t++;
+          }
+          if(umap.find(i + (j+1)*rows.x + (k+1)*rows.x*rows.y) == umap.end())
+          {
           Point pt8 = Point(pt.x , pt.y + voxel_size, pt.z+ voxel_size);
-          
-          myfile << "v " << pt.x << " " << pt.y << " " << pt.z << "\n";      
-          myfile << "v " << pt2.x << " " << pt2.y << " " << pt2.z << "\n";
-          myfile << "v " << pt3.x << " " << pt3.y << " " << pt3.z << "\n";
-          myfile << "v " << pt4.x << " " << pt4.y << " " << pt4.z << "\n";
-          myfile << "v " << pt5.x << " " << pt5.y << " " << pt5.z << "\n";
-          myfile << "v " << pt6.x << " " << pt6.y << " " << pt6.z << "\n";
-          myfile << "v " << pt7.x << " " << pt7.y << " " << pt7.z << "\n";
-          myfile << "v " << pt8.x << " " << pt8.y << " " << pt8.z << "\n";
+          myfile << "v " << pt8.x << " " << pt8.y << " " << pt8.z << "\n"; 
+          umap.insert({i + (j+1)*rows.x + (k+1)*rows.x*rows.y,t});
+          t++;
+          }
+          int v1 = umap[i + j*rows.x + k*rows.x*rows.y];
+          int v2 = umap[i + (j+1)*rows.x + k*rows.x*rows.y];
+          int v3 = umap[(i+1) + (j+1)*rows.x + k*rows.x*rows.y];
+          int v4 = umap[(i+1) + j*rows.x + k*rows.x*rows.y];
+          int v5 = umap[i + j*rows.x + (k+1)*rows.x*rows.y];
+          int v6 = umap[(i+1) + j*rows.x + (k+1)*rows.x*rows.y];
+          int v7 = umap[(i+1) + (j+1)*rows.x + (k+1)*rows.x*rows.y];
+          int v8 = umap[i + (j+1)*rows.x + (k+1)*rows.x*rows.y];
 
-
-
-          myfile << "f " <<  counter << " " << counter+3 << " " << counter+2 << " " << counter+1   << "\n";
-          myfile << "f " <<  counter+4 << " " << counter+5 << " " << counter + 6 << " " << counter+7   << "\n";
-          myfile << "f " <<  counter << " " << counter+3 << " " << counter+5 << " " << counter+4   << "\n";
-          myfile << "f " <<  counter+1 << " " << counter+2 << " " << counter+6 << " " << counter+7   << "\n";
-          myfile << "f " <<  counter << " " << counter+1 << " " << counter+7 << " " << counter+4   << "\n";
-          myfile << "f " <<  counter+3 << " " << counter+2 << " " << counter+6 << " " << counter+5   << "\n";
-          counter = counter + 8;
-          t ++;
-
+          myfile << "f " <<  v1 << " " << v4 << " " << v3 << " " << v2  << "\n";
+          myfile << "f " <<  v5 << " " << v6 << " " << v7 << " " << v8   << "\n";
+          myfile << "f " <<  v1 << " " << v4 << " " << v6 << " " << v5  << "\n";
+          myfile << "f " <<  v2 << " " << v3 << " " << v7 << " " << v8   << "\n";
+          myfile << "f " <<  v1 << " " << v2 << " " << v8<< " " << v5  << "\n";
+          myfile << "f " <<  v4 << " " << v3 << " " << v7 << " " << v6  << "\n";
         }
       }
     }
   }
   myfile.close();
-  std::cout << "Number of boxels written:  " <<t << std::endl;
   std::cout << "FINISHED Writing file: " << file_out << std::endl;
   // to do
   return 0;
